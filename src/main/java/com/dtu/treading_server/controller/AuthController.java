@@ -39,7 +39,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@RequestBody User user) throws Exception {
         User isUserExist = userRepository.findByEmail(user.getEmail());
         if (isUserExist != null) {
-          throw new Exception("email is already used with another account");
+            throw new Exception("email is already used with another account");
         }
 
         User newUser = new User();
@@ -103,7 +103,8 @@ public class AuthController {
         return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
     }
 
-    public ResponseEntity<AuthResponse> verifyOtp(
+    @PostMapping("two-factor-auth/verify-otp/{otp}")
+    public ResponseEntity<AuthResponse> verifySignInOtp(
             @PathVariable String otp,
             @RequestParam String id) throws Exception {
 
