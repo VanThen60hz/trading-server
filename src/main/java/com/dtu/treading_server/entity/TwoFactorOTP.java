@@ -1,6 +1,5 @@
 package com.dtu.treading_server.entity;
 
-import com.dtu.treading_server.domain.USER_ROLE;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,27 +12,23 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "user")
-public class User {
+@Table(name = "two_factor_otp")
+public class TwoFactorOTP {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
-    private Long id;
+    private String id;
 
-    @Column(name = "full_name")
-    private String fullName;
+    @Column(name = "otp")
+    private String otp;
 
-    @Column(name = "password")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String password;
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(name = "email")
-    private String email;
-
-    @Embedded
-    private TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-
-    @Column(name = "role")
-    private USER_ROLE role = USER_ROLE.ROLE_CUSTOMER;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(name = "jwt")
+    private String jwt;
 
 }
