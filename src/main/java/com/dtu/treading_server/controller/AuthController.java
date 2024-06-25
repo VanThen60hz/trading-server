@@ -1,13 +1,17 @@
 package com.dtu.treading_server.controller;
 
 import com.dtu.treading_server.config.JwtProvider;
+import com.dtu.treading_server.domain.VerificationType;
+import com.dtu.treading_server.entity.ForgotPasswordToken;
 import com.dtu.treading_server.entity.TwoFactorOTP;
 import com.dtu.treading_server.entity.User;
+import com.dtu.treading_server.entity.VerificationCode;
 import com.dtu.treading_server.repository.UserRepository;
+import com.dtu.treading_server.request.ForgotPasswordTokenRequest;
+import com.dtu.treading_server.request.ResetPasswordRequest;
+import com.dtu.treading_server.response.ApiResponse;
 import com.dtu.treading_server.response.AuthResponse;
-import com.dtu.treading_server.service.CustomerUserDetailsService;
-import com.dtu.treading_server.service.EmailService;
-import com.dtu.treading_server.service.TwoFactorOtpService;
+import com.dtu.treading_server.service.*;
 import com.dtu.treading_server.utils.OtpUtils;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +24,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private CustomerUserDetailsService customerUserDetailsService;
@@ -34,6 +43,12 @@ public class AuthController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ForgotPasswordService forgotPasswordService;
+
+    @Autowired
+    private VerificationCodeService verificationCodeService;
 
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> register(@RequestBody User user) throws Exception {
@@ -120,6 +135,57 @@ public class AuthController {
         }
 
         throw new Exception("Invalid OTP");
+    }
+
+    @PostMapping("user/reset-password/send-otp")
+    public ResponseEntity<AuthResponse> sendForgotPasswordOtp(
+            @RequestBody ForgotPasswordTokenRequest req) throws Exception {
+
+        User user = userService.findUserByEmail(req.getSendTo());
+        String otp = OtpUtils.generateOtp();
+        UUID uuid = UUID.randomUUID();
+        String id = uuid.toString();
+
+        ForgotPasswordToken token = forgotPasswordService.findByUser(user.getId());
+
+        if (token == null) {
+            token = forgotPasswordService.createForgotPasswordToken(
+                    user, id, otp,
+                    req.getVerificationType(),
+                    req.getSendTo()
+            );
+        }
+
+        if (req.getVerificationType().equals(VerificationType.EMAIL)) {
+            emailService.sendVerificationOtpEmail(
+                    user.getEmail(),
+                    token.getOtp()
+            );
+        }
+
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setSession(token.getId());
+        authResponse.setMessage("Password reset OTP sent successfully");
+
+        return new ResponseEntity<>(authResponse, HttpStatus.OK);
+    }
+
+    @PatchMapping("/user/reset-password/verify-otp")
+    public ResponseEntity<ApiResponse> resetPassword(
+            @RequestParam String id,
+            @RequestBody ResetPasswordRequest req) throws Exception {
+
+        ForgotPasswordToken forgotPasswordToken = forgotPasswordService.findById(id);
+
+        boolean isVerified = forgotPasswordToken.getOtp().equals(req.getOtp());
+
+        if (isVerified) {
+            userService.updatePassword(forgotPasswordToken.getUser(), req.getPassword());
+            ApiResponse apiResponse = new ApiResponse();
+            apiResponse.setMessage("Password reset successfully");
+            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+        }
+        throw new Exception("Wrong OTP");
     }
 
     private Authentication authenticated(String username, String password) {

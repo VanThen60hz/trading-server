@@ -16,14 +16,13 @@ public class JwtProvider {
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
         String roles = populateAuthorities(authorities);
 
-        String jwt = Jwts.builder()
+        return Jwts.builder()
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .claim("email", auth.getName())
                 .claim("authorities", roles)
                 .signWith(key)
                 .compact();
-        return jwt;
     }
 
     public static String getEmailFromToken(String token) {
