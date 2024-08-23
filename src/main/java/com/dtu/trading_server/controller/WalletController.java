@@ -4,6 +4,7 @@ import com.dtu.trading_server.entity.Order;
 import com.dtu.trading_server.entity.User;
 import com.dtu.trading_server.entity.Wallet;
 import com.dtu.trading_server.entity.WalletTransaction;
+import com.dtu.trading_server.service.OrderService;
 import com.dtu.trading_server.service.UserService;
 import com.dtu.trading_server.service.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/wallet")
 public class WalletController {
+    @Autowired
+    private OrderService orderService;
+
     @Autowired
     private WalletService walletService;
 
@@ -43,16 +47,16 @@ public class WalletController {
         return new ResponseEntity<>(wallet, HttpStatus.ACCEPTED);
     }
 
-//    @PutMapping("/order/{orderId}/pay")
-//    public ResponseEntity<Wallet> payOrderPayment(
-//            @RequestHeader("Authorization") String jwt,
-//            @PathVariable Long orderId
-//    ) throws Exception {
-//        User user = userService.findProfileByJwt(jwt);
-//        Order order = orderService.findById(orderId);
-//
-//        Wallet wallet = walletService.payOrderPayment(order, user);
-//
-//        return new ResponseEntity<>(wallet, HttpStatus.ACCEPTED);
-//    }
+    @PutMapping("/order/{orderId}/pay")
+    public ResponseEntity<Wallet> payOrderPayment(
+            @RequestHeader("Authorization") String jwt,
+            @PathVariable Long orderId
+    ) throws Exception {
+        User user = userService.findProfileByJwt(jwt);
+        Order order = orderService.getOrderById(orderId);
+
+        Wallet wallet = walletService.payOrderPayment(order, user);
+
+        return new ResponseEntity<>(wallet, HttpStatus.ACCEPTED);
+    }
 }
