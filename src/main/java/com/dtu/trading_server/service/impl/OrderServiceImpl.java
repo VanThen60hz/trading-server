@@ -2,12 +2,10 @@ package com.dtu.trading_server.service.impl;
 
 import com.dtu.trading_server.domain.OrderStatus;
 import com.dtu.trading_server.domain.OrderType;
-import com.dtu.trading_server.entity.Coin;
-import com.dtu.trading_server.entity.Order;
-import com.dtu.trading_server.entity.OrderItem;
-import com.dtu.trading_server.entity.User;
+import com.dtu.trading_server.entity.*;
 import com.dtu.trading_server.repository.OrderItemRepository;
 import com.dtu.trading_server.repository.OrderRepository;
+import com.dtu.trading_server.service.AssetService;
 import com.dtu.trading_server.service.OrderService;
 import com.dtu.trading_server.service.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +27,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private AssetService assetService;
 
     @Override
     public Order createOrder(User user, OrderItem orderItem, OrderType orderType) throws Exception {
@@ -95,29 +96,29 @@ public class OrderServiceImpl implements OrderService {
             throw new Exception("Quantity must be greater than 0");
         }
 
-//        double sellPrice = coin.getCurrentPrice();
-//        double buyPrice = assetToSell.getBuyPrice();
-//
-//        OrderItem orderItem = createOrderItem(coin, quantity, buyPrice, 0);
-//
-//        Order order = createOrder(user, orderItem, OrderType.SELL);
-//        orderItem.setOrder(order);
-//
-//        if (assetToSell.getQuantity() >= quantity) {
-//            order.setStatus(OrderStatus.SUCCESS);
-//            order.setOrderType(OrderType.SELL);
-//            Order savedOrder = orderRepository.save(order);
-//
-//            walletService.payOrderPayment(order, user);
-//
-//            Asset updateAsset = assetService.updateAsset(assetToSell, -quantity);
-//            if (updateAsset.getQuantity * coin.getCurrentPrice() <= 1) {
-//                assetService.deleteAsset(updateAsset.getId());
-//                throw new Exception("Cannot update asset");
-//            }
-//
-//            return savedOrder;
-//        }
+        double sellPrice = coin.getCurrentPrice();
+        double buyPrice = assetToSell.getBuyPrice();
+
+        OrderItem orderItem = createOrderItem(coin, quantity, buyPrice, 0);
+
+        Order order = createOrder(user, orderItem, OrderType.SELL);
+        orderItem.setOrder(order);
+
+        if (assetToSell.getQuantity() >= quantity) {
+            order.setStatus(OrderStatus.SUCCESS);
+            order.setOrderType(OrderType.SELL);
+            Order savedOrder = orderRepository.save(order);
+
+            walletService.payOrderPayment(order, user);
+
+            Asset updateAsset = assetService.updateAsset(assetToSell, -quantity);
+            if (updateAsset.getQuantity * coin.getCurrentPrice() <= 1) {
+                assetService.deleteAsset(updateAsset.getId());
+                throw new Exception("Cannot update asset");
+            }
+
+            return savedOrder;
+        }
 
         throw new Exception("Insufficient quantity to sell");
     }
