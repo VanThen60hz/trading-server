@@ -85,7 +85,16 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderType(OrderType.BUY);
         Order savedOrder = orderRepository.save(order);
 
-        // wcreate asset
+        // create asset
+        Asset oldAsset = assetService.findAssetByUserIdAndCoinId(
+                order.getUser().getId(),
+                order.getOrderItem().getCoin().getId());
+
+        if (oldAsset == null) {
+            assetService.createAsset(user, orderItem.getCoin(), orderItem.getQuantity());
+        } else {
+            assetService.updateAsset(oldAsset.getId(), quantity);
+        }
 
         return savedOrder;
     }
@@ -97,9 +106,20 @@ public class OrderServiceImpl implements OrderService {
         }
 
         double sellPrice = coin.getCurrentPrice();
+
+        Asset assetToSell = assetService.findAssetByUserIdAndCoinId(
+                user.getId(),
+                coin.getId()
+        );
         double buyPrice = assetToSell.getBuyPrice();
 
-        OrderItem orderItem = createOrderItem(coin, quantity, buyPrice, 0);
+
+        OrderItem orderItem = createOrderItem(
+                coin,
+                quantity,
+                buyPrice,
+                0);
+
 
         Order order = createOrder(user, orderItem, OrderType.SELL);
         orderItem.setOrder(order);
@@ -111,8 +131,8 @@ public class OrderServiceImpl implements OrderService {
 
             walletService.payOrderPayment(order, user);
 
-            Asset updateAsset = assetService.updateAsset(assetToSell, -quantity);
-            if (updateAsset.getQuantity * coin.getCurrentPrice() <= 1) {
+            Asset updateAsset = assetService.updateAsset(assetToSell.getId(), -quantity);
+            if (updateAsset.getQuantity() * coin.getCurrentPrice() <= 1) {
                 assetService.deleteAsset(updateAsset.getId());
                 throw new Exception("Cannot update asset");
             }
