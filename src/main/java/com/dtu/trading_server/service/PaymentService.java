@@ -5,6 +5,7 @@ import com.dtu.trading_server.entity.PaymentOrder;
 import com.dtu.trading_server.entity.User;
 import com.dtu.trading_server.response.PaymentResponse;
 import com.razorpay.RazorpayException;
+import com.stripe.exception.StripeException;
 
 public interface PaymentService {
     PaymentOrder createOrder(User user, Long amount,
@@ -16,5 +17,5 @@ public interface PaymentService {
 
     PaymentResponse createRazorpayPaymentLink(User user, Long amount) throws RazorpayException;
 
-    PaymentResponse createStripePaymentLink(User user, Long amount, Long orderId);
+    PaymentResponse createStripePaymentLink(User user, Long amount, Long orderId) throws StripeException;
 }
