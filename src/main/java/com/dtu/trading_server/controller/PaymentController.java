@@ -7,6 +7,7 @@ import com.dtu.trading_server.response.PaymentResponse;
 import com.dtu.trading_server.service.PaymentService;
 import com.dtu.trading_server.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +36,6 @@ public class PaymentController {
         } else {
             paymentResponse = paymentService.createStripePaymentLink(user, amount, paymentOrder.getId());
         }
-        return new ResponseEntity<>(paymentResponse, HttpStatus);
+        return new ResponseEntity<>(paymentResponse, HttpStatus.CREATED);
     }
 }

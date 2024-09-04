@@ -1,10 +1,9 @@
 package com.dtu.trading_server.controller;
 
-import com.dtu.trading_server.entity.Order;
-import com.dtu.trading_server.entity.User;
-import com.dtu.trading_server.entity.Wallet;
-import com.dtu.trading_server.entity.WalletTransaction;
+import com.dtu.trading_server.entity.*;
+import com.dtu.trading_server.response.PaymentResponse;
 import com.dtu.trading_server.service.OrderService;
+import com.dtu.trading_server.service.PaymentService;
 import com.dtu.trading_server.service.UserService;
 import com.dtu.trading_server.service.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +22,9 @@ public class WalletController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     public ResponseEntity<Wallet> getUserWallet(@RequestHeader("Authorization") String jwt) throws Exception {
         User user = userService.findProfileByJwt(jwt);
@@ -56,6 +58,25 @@ public class WalletController {
         Order order = orderService.getOrderById(orderId);
 
         Wallet wallet = walletService.payOrderPayment(order, user);
+
+        return new ResponseEntity<>(wallet, HttpStatus.ACCEPTED);
+    }
+
+    @PutMapping("/deposit")
+    public ResponseEntity<Wallet> addBalanceToWallet(
+            @RequestHeader("Authorization") String jwt,
+            @RequestParam(name = "order_id") Long orderId,
+            @RequestParam(name = "payment_id") String paymentId
+    ) throws Exception {
+        User user = userService.findProfileByJwt(jwt);
+        Wallet wallet = walletService.getUserWallet(user);
+
+        PaymentOrder order = paymentService.getPaymentOrderById(orderId);
+
+        Boolean status = paymentService.processPaymentOrder(order, paymentId);
+        if (status) {
+            wallet = walletService.addBalance(wallet, order.getAmount());
+        }
 
         return new ResponseEntity<>(wallet, HttpStatus.ACCEPTED);
     }
